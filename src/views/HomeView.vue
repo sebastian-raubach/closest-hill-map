@@ -1,5 +1,20 @@
 <template>
-  <div id="map">
+  <div>
+    <b-container>
+      <b-jumbotron class="mb-3" header="Closest Hill Map" lead="Find the 10 closest hills to the center of the map.">
+        <b-button variant="primary" :to="{ name: 'about' }">Find out more</b-button>
+      </b-jumbotron>
+      <div class="text-center mb-3">
+        <b-button-group>
+          <b-button
+            v-for="hill in hillTypes"
+            :key="`hill-type-${hill.name}`"
+            :pressed.sync="hill.state"><span :style="{ color: hill.state ? hill.color : '#999' }">⬤</span> <span class="hill-name">{{ hill.name }}</span></b-button>
+        </b-button-group>
+      </div>
+    </b-container>
+    <div id="map">
+    </div>
   </div>
 </template>
 
@@ -15,14 +30,20 @@ const allHills = require('@/assets/hills.json')
 export default {
   data: function () {
     return {
-      hillType: 'munro',
       mapMarkers: [],
-      mapLines: []
+      mapLines: [],
+      hillTypes: [
+        { name: 'munro', color: '#eb3b5a', state: true },
+        { name: 'corbett', color: '#fa8231', state: true },
+        { name: 'graham', color: '#20bf6b', state: true },
+        { name: 'donald', color: '#0fb9b1', state: true }
+      ]
     }
   },
   computed: {
     hills: function () {
-      return allHills.filter(h => h.type === this.hillType)
+      const types = this.hillTypes.filter(ht => ht.state).map(ht => ht.name)
+      return allHills.filter(h => types.includes(h.type))
     },
     features: function () {
       return featureCollection([...this.hills.map(h => point([h.lat, h.lng], { name: h.name }))])
@@ -30,16 +51,8 @@ export default {
   },
   watch: {
     hills: function () {
-      this.updateHills()
-    },
-    mapMarkers: function (newValue) {
-      const bounds = L.latLngBounds()
-
-      newValue.forEach(m => bounds.extend(m.getLatLng()))
-
-      if (bounds.isValid()) {
-        this.map.fitBounds(bounds.pad(0.1))
-      }
+      this.updateMarkers()
+      this.updateLines()
     }
   },
   methods: {
@@ -50,21 +63,32 @@ export default {
         timer = setTimeout(() => { func.apply(this, args) }, timeout)
       }
     },
-    updateMarkers: function () {
+    updateMarkers: function (updateBounds = false) {
       this.mapMarkers.forEach(m => this.map.removeLayer(m))
 
       this.mapMarkers = this.hills.map(h => {
+        const color = this.hillTypes.find(ht => ht.name === h.type).color
         const marker = L.circleMarker([h.lat, h.lng], {
           stroke: false,
-          radius: 5,
+          radius: 4,
           fillOpacity: 0.75,
-          fillColor: '#7f8c8d'
+          fillColor: color
         }).bindPopup(h.name)
 
         marker.addTo(this.map)
 
         return marker
       })
+
+      if (updateBounds) {
+        const bounds = L.latLngBounds()
+
+        this.mapMarkers.forEach(m => bounds.extend(m.getLatLng()))
+
+        if (bounds.isValid()) {
+          this.map.fitBounds(bounds.pad(0.1))
+        }
+      }
     },
     updateLines: function () {
       this.mapLines.forEach(l => this.map.removeLayer(l))
@@ -116,9 +140,6 @@ export default {
 
     this.map = L.map('map').setView([51.505, -0.09], 13)
     this.map.addLayer(openstreetmap)
-    // this.map.on('move', () => {
-    //   this.updateLines()
-    // })
     this.map.on('move', this.debounce(() => this.updateLines()))
 
     // Add an additional satellite layer
@@ -134,13 +155,16 @@ export default {
 
     L.control.layers(baseMaps).addTo(this.map)
 
-    this.updateMarkers()
+    this.updateMarkers(true)
   }
 }
 </script>
 
 <style scoped>
 #map {
-  height: 100vh;
+  height: 90vh;
+}
+.hill-name {
+  text-transform: capitalize;
 }
 </style>
