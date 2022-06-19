@@ -57,8 +57,8 @@ export default {
         const marker = L.circleMarker([h.lat, h.lng], {
           stroke: false,
           radius: 5,
-          fillOpacity: 1,
-          fillColor: '#1289A7'
+          fillOpacity: 0.75,
+          fillColor: '#7f8c8d'
         }).bindPopup(h.name)
 
         marker.addTo(this.map)
