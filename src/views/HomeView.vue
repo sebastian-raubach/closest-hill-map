@@ -29,6 +29,12 @@
     </b-container>
     <div id="map">
     </div>
+
+    <footer class="footer py-3 bg-dark">
+      <b-container class="text-center">
+        <span class="text-muted">This page was created by <a href="https://github.com/sebastian-raubach">Sebastian Raubach</a>. If you would like to support him, you can <a href="https://github.com/sponsors/sebastian-raubach">buy him a coffee ☕</a>.</span>
+      </b-container>
+    </footer>
   </div>
 </template>
 
@@ -37,10 +43,13 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import tinygradient from 'tinygradient'
 import { distance, nearestPoint, point, featureCollection } from '@turf/turf'
-import { BIconArrowsMove, BIconCursor, BIconHandIndex, BIconSortNumericUpAlt } from 'bootstrap-vue'
+import { BIconArrowsMove, BIconCursor, BIconGeoAltFill, BIconHandIndex, BIconSortNumericUpAlt } from 'bootstrap-vue'
 
 const gradient = tinygradient(['#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'])
 const allHills = require('@/assets/hills.json')
+
+let mapMarkers = []
+let mapLines = []
 
 export default {
   components: {
@@ -48,15 +57,14 @@ export default {
   },
   data: function () {
     return {
-      mapMarkers: [],
-      mapLines: [],
       updateMode: 'center',
       hillCount: 10,
       lastEventLocation: null,
       updateModes: [
         { text: 'Center of  map', value: 'center', icon: BIconArrowsMove },
         { text: 'Click', value: 'click', icon: BIconHandIndex },
-        { text: 'Follow mouse', value: 'mouse', icon: BIconCursor }
+        { text: 'Follow mouse', value: 'mouse', icon: BIconCursor },
+        { text: 'My location', value: 'gps', icon: BIconGeoAltFill }
       ],
       hillTypes: [
         { name: 'munro', color: '#eb3b5a', state: true },
@@ -69,34 +77,58 @@ export default {
   },
   computed: {
     hills: function () {
+      // Filter hills on type state
       const types = this.hillTypes.filter(ht => ht.state).map(ht => ht.name)
       return allHills.filter(h => types.includes(h.type))
     },
     features: function () {
+      // Create a feature to find closest hill
       return featureCollection([...this.hills.map(h => point([h.lat, h.lng], { name: h.name }))])
     }
   },
   watch: {
     hills: function () {
+      // When the hills change, update everything
       this.updateMarkers()
       this.updateLines()
     },
     updateMode: function (newValue) {
+      // Remove all handlers
       this.map.off('move', this.debouncer)
       this.map.off('click', this.updateLines)
       this.map.off('mousemove', this.updateLines)
 
+      // Add handlers depending on mode
       if (newValue === 'center') {
         this.map.on('move', this.debouncer)
       } else if (newValue === 'click') {
         this.map.on('click', this.updateLines)
       } else if (newValue === 'mouse') {
         this.map.on('mousemove', this.updateLines)
+      } else if (newValue === 'gps') {
+        navigator.geolocation.getCurrentPosition(position => {
+          if (position && position.coords) {
+            this.lastEventLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }
+
+            this.updateLines()
+          } else {
+            this.lastEventLocation = null
+            this.updateLines()
+          }
+        }, () => {
+          this.lastEventLocation = null
+          this.updateLines()
+        }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 })
       }
 
+      // Update the lines
       this.updateLines()
     },
     hillCount: function () {
+      // Update the lines when the number of line parameter changes
       this.updateLines()
     }
   },
@@ -109,10 +141,14 @@ export default {
       }
     },
     updateMarkers: function (updateBounds = false) {
-      this.mapMarkers.forEach(m => this.map.removeLayer(m))
+      // Remove all old markers
+      mapMarkers.forEach(m => this.map.removeLayer(m))
 
-      this.mapMarkers = this.hills.map(h => {
+      // Add new markers based on the filtered list, store in data
+      mapMarkers = this.hills.map(h => {
+        // Get the color
         const color = this.hillTypes.find(ht => ht.name === h.type).color
+        // Create the marker
         const marker = L.circleMarker([h.lat, h.lng], {
           stroke: false,
           radius: 4,
@@ -120,15 +156,17 @@ export default {
           fillColor: color
         }).bindPopup(h.name)
 
+        // Add to map
         marker.addTo(this.map)
 
         return marker
       })
 
       if (updateBounds) {
+        // Calculate the bounds of the map based on the markers
         const bounds = L.latLngBounds()
 
-        this.mapMarkers.forEach(m => bounds.extend(m.getLatLng()))
+        mapMarkers.forEach(m => bounds.extend(m.getLatLng()))
 
         if (bounds.isValid()) {
           this.map.fitBounds(bounds.pad(0.1))
@@ -136,30 +174,40 @@ export default {
       }
     },
     updateLines: function (e) {
-      this.mapLines.forEach(l => this.map.removeLayer(l))
+      // Remove all lines
+      mapLines.forEach(l => this.map.removeLayer(l))
 
-      let center
+      let target
 
       if (this.updateMode === 'center') {
-        center = point([this.map.getCenter().lat, this.map.getCenter().lng])
-      } else if (this.updateMode === 'click' || this.updateMode === 'mouse') {
+        // Get the map center
+        target = point([this.map.getCenter().lat, this.map.getCenter().lng])
+      } else if (this.updateMode === 'click' || this.updateMode === 'mouse' || this.updateMode === 'gps') {
         let latlng
         if (!e) {
+          // Try and restore the previous target
           latlng = this.lastEventLocation
         } else {
+          // Use the parameter
           latlng = e.latlng
           this.lastEventLocation = e.latlng
         }
 
-        center = point([latlng.lat, latlng.lng])
+        // If nothing available, return
+        if (!latlng) {
+          return
+        }
+
+        target = point([latlng.lat, latlng.lng])
       }
 
       const coll = JSON.parse(JSON.stringify(this.features))
       const nearestList = []
 
+      // Get the nearest ones, removing the nearest in each iteration
       for (let i = 0; i < this.hillCount; i++) {
-        const nearest = nearestPoint(center, coll)
-        const dist = distance(center, nearest)
+        const nearest = nearestPoint(target, coll)
+        const dist = distance(target, nearest)
 
         nearestList.push({ point: nearest.geometry.coordinates, dist: dist })
 
@@ -169,8 +217,9 @@ export default {
         }
       }
 
-      this.mapLines = nearestList.map((n, i) => {
-        const line = L.polyline([center.geometry.coordinates, n.point], {
+      // Create the lines
+      mapLines = nearestList.map((n, i) => {
+        const line = L.polyline([target.geometry.coordinates, n.point], {
           interactive: false,
           opacity: 0.75,
           color: gradient.rgbAt((i + 1) / nearestList.length)
@@ -192,7 +241,14 @@ export default {
 
     this.map = L.map('map').setView([51.505, -0.09], 13)
     this.map.addLayer(openstreetmap)
+
+    // Initially, add the move handler
     this.map.on('move', this.debouncer)
+
+    // Disable scrolling until map gains focus, remove scrolling when it loses focus
+    this.map.scrollWheelZoom.disable()
+    this.map.on('focus', () => this.map.scrollWheelZoom.enable())
+    this.map.on('blur', () => this.map.scrollWheelZoom.disable())
 
     // Add an additional satellite layer
     const satellite = L.tileLayer('//server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -207,6 +263,7 @@ export default {
 
     L.control.layers(baseMaps).addTo(this.map)
 
+    // Update the markers initially
     this.updateMarkers(true)
   }
 }
