@@ -60,6 +60,7 @@ export default {
       updateMode: 'center',
       hillCount: 10,
       lastEventLocation: null,
+      geolocationWatchId: null,
       updateModes: [
         { text: 'Center of  map', value: 'center', icon: BIconArrowsMove },
         { text: 'Click', value: 'click', icon: BIconHandIndex },
@@ -83,7 +84,7 @@ export default {
     },
     features: function () {
       // Create a feature to find closest hill
-      return featureCollection([...this.hills.map(h => point([h.lat, h.lng], { name: h.name }))])
+      return featureCollection([...this.hills.map((h, i) => point([h.lat, h.lng], { name: h.name, id: i }))])
     }
   },
   watch: {
@@ -92,11 +93,19 @@ export default {
       this.updateMarkers()
       this.updateLines()
     },
-    updateMode: function (newValue) {
+    updateMode: function (newValue, oldValue) {
       // Remove all handlers
-      this.map.off('move', this.debouncer)
-      this.map.off('click', this.updateLines)
-      this.map.off('mousemove', this.updateLines)
+      if (oldValue === 'center') {
+        this.map.off('move', this.debouncer)
+      } else if (oldValue === 'click') {
+        this.map.off('click', this.updateLines)
+      } else if (oldValue === 'mouse') {
+        this.map.off('mousemove', this.updateLines)
+      } else if (oldValue === 'gps') {
+        if (this.geolocationWatchId && navigator.geolocation) {
+          navigator.geolocation.clearWatch(this.geolocationWatchId)
+        }
+      }
 
       // Add handlers depending on mode
       if (newValue === 'center') {
@@ -106,7 +115,8 @@ export default {
       } else if (newValue === 'mouse') {
         this.map.on('mousemove', this.updateLines)
       } else if (newValue === 'gps') {
-        navigator.geolocation.getCurrentPosition(position => {
+        const options = { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
+        this.geolocationWatchId = navigator.geolocation.watchPosition(position => {
           if (position && position.coords) {
             this.lastEventLocation = {
               lat: position.coords.latitude,
@@ -118,10 +128,7 @@ export default {
             this.lastEventLocation = null
             this.updateLines()
           }
-        }, () => {
-          this.lastEventLocation = null
-          this.updateLines()
-        }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 })
+        }, null, options)
       }
 
       // Update the lines
@@ -204,14 +211,19 @@ export default {
       const coll = JSON.parse(JSON.stringify(this.features))
       const nearestList = []
 
+      if (!coll || coll.features.length < 1) {
+        return
+      }
+
+      const limit = Math.min(this.hillCount, coll.features.length)
       // Get the nearest ones, removing the nearest in each iteration
-      for (let i = 0; i < this.hillCount; i++) {
+      for (let i = 0; i < limit; i++) {
         const nearest = nearestPoint(target, coll)
         const dist = distance(target, nearest)
 
         nearestList.push({ point: nearest.geometry.coordinates, dist: dist })
 
-        const index = coll.features.findIndex(n => n.properties.name === nearest.properties.name)
+        const index = coll.features.findIndex(n => n.properties.id === nearest.properties.id)
         if (index !== -1) {
           coll.features.splice(index, 1)
         }
