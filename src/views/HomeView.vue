@@ -52,6 +52,7 @@ export default {
       mapLines: [],
       updateMode: 'center',
       hillCount: 10,
+      lastEventLocation: null,
       updateModes: [
         { text: 'Center of  map', value: 'center', icon: BIconArrowsMove },
         { text: 'Click', value: 'click', icon: BIconHandIndex },
@@ -142,11 +143,15 @@ export default {
       if (this.updateMode === 'center') {
         center = point([this.map.getCenter().lat, this.map.getCenter().lng])
       } else if (this.updateMode === 'click' || this.updateMode === 'mouse') {
+        let latlng
         if (!e) {
-          return
+          latlng = this.lastEventLocation
+        } else {
+          latlng = e.latlng
+          this.lastEventLocation = e.latlng
         }
 
-        center = point([e.latlng.lat, e.latlng.lng])
+        center = point([latlng.lat, latlng.lng])
       }
 
       const coll = JSON.parse(JSON.stringify(this.features))
