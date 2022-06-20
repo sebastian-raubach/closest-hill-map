@@ -7,6 +7,10 @@ import store from './store'
 import {
   ButtonGroupPlugin,
   ButtonPlugin,
+  FormInputPlugin,
+  FormPlugin,
+  FormRadioPlugin,
+  InputGroupPlugin,
   JumbotronPlugin,
   LayoutPlugin,
   NavbarPlugin
@@ -14,6 +18,10 @@ import {
 
 Vue.use(ButtonPlugin)
 Vue.use(ButtonGroupPlugin)
+Vue.use(FormPlugin)
+Vue.use(FormInputPlugin)
+Vue.use(FormRadioPlugin)
+Vue.use(InputGroupPlugin)
 Vue.use(JumbotronPlugin)
 Vue.use(LayoutPlugin)
 Vue.use(NavbarPlugin)
