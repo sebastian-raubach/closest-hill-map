@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <b-navbar toggleable="lg" type="dark" variant="info">
-      <b-navbar-brand href="#">ClosestHillMap</b-navbar-brand>
+      <b-navbar-brand :to="{ name: 'home' }">ClosestHillMap</b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 

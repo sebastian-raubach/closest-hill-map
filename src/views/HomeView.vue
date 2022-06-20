@@ -24,6 +24,8 @@ import 'leaflet/dist/leaflet.css'
 import tinygradient from 'tinygradient'
 import { distance, nearestPoint, point, featureCollection } from '@turf/turf'
 
+require('leaflet-arc')
+
 const gradient = tinygradient(['#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'])
 const allHills = require('@/assets/hills.json')
 
@@ -102,15 +104,6 @@ export default {
         const nearest = nearestPoint(center, coll)
         const dist = distance(center, nearest)
 
-        const startLng = center.geometry.coordinates[0]
-        const endLng = nearest.geometry.coordinates[0]
-
-        if (startLng >= 90 && endLng <= -90) {
-          nearest.geometry.coordinates[0] += 360
-        } else if (startLng <= -90 && endLng >= 90) {
-          nearest.geometry.coordinates[0] -= 360
-        }
-
         nearestList.push({ point: nearest.geometry.coordinates, dist: dist })
 
         const index = coll.features.findIndex(n => n.properties.name === nearest.properties.name)
@@ -120,7 +113,8 @@ export default {
       }
 
       this.mapLines = nearestList.map((n, i) => {
-        const line = L.polyline([center.geometry.coordinates, n.point], {
+        const line = L.Polyline.Arc(center.geometry.coordinates, n.point, {
+          interactive: false,
           color: gradient.rgbAt((i + 1) / nearestList.length)
         })
 
