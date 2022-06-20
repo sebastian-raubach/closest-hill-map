@@ -111,7 +111,7 @@ export default {
       }
 
       this.mapLines = nearestList.map((n, i) => {
-        const line = L.Polyline([center.geometry.coordinates, n.point], {
+        const line = L.polyline([center.geometry.coordinates, n.point], {
           interactive: false,
           color: gradient.rgbAt((i + 1) / nearestList.length)
         })
