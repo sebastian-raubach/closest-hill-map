@@ -4,10 +4,13 @@
       <b-jumbotron class="mb-3" header="Closest Hill Map" lead="Find the closest hills to your location.">
         <p>Use the controls below to toggle hill types, select the interaction mode and the number of hills.</p>
         <b-button variant="primary" :to="{ name: 'about' }">Find out more</b-button>
+        <b-button variant="secondary" class="mx-2" @click="$refs.dataImportModal.show()">Import my own data</b-button>
+        <b-button variant="secondary" @click="customData = null" v-if="customData">Reset</b-button>
       </b-jumbotron>
       <div class="d-flex flex-wrap justify-content-center align-items-center">
         <b-button-group class="flex-wrap mx-2 mb-3">
           <b-button
+            :disabled="customData"
             v-for="hill in hillTypes"
             :key="`hill-type-${hill.name}`"
             :pressed.sync="hill.state"><span :style="{ color: hill.state ? hill.color : '#999' }">⬤</span> <span class="hill-name">{{ hill.name }}</span></b-button>
@@ -35,15 +38,20 @@
         <span class="text-muted">This page was created by <a href="https://github.com/sebastian-raubach">Sebastian Raubach</a>. If you would like to support him, you can <a href="https://github.com/sponsors/sebastian-raubach">buy him a coffee ☕</a>.</span>
       </b-container>
     </footer>
+
+    <DataImportModal ref="dataImportModal" @data-loaded="data => { customData = data }" />
   </div>
 </template>
 
 <script>
+import DataImportModal from '@/components/DataImportModal'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import tinygradient from 'tinygradient'
 import { distance, nearestPoint, point, featureCollection } from '@turf/turf'
 import { BIconArrowsMove, BIconCursor, BIconGeoAltFill, BIconHandIndex, BIconSortNumericUpAlt } from 'bootstrap-vue'
+
+require('leaflet.geodesic')
 
 const gradient = tinygradient(['#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'])
 const allHills = require('@/assets/hills.json')
@@ -53,10 +61,12 @@ let mapLines = []
 
 export default {
   components: {
-    BIconSortNumericUpAlt
+    BIconSortNumericUpAlt,
+    DataImportModal
   },
   data: function () {
     return {
+      customData: null,
       updateMode: 'center',
       hillCount: 10,
       lastEventLocation: null,
@@ -79,8 +89,12 @@ export default {
   computed: {
     hills: function () {
       // Filter hills on type state
-      const types = this.hillTypes.filter(ht => ht.state).map(ht => ht.name)
-      return allHills.filter(h => types.includes(h.type))
+      if (this.customData) {
+        return this.customData
+      } else {
+        const types = this.hillTypes.filter(ht => ht.state).map(ht => ht.name)
+        return allHills.filter(h => types.includes(h.type))
+      }
     },
     features: function () {
       // Create a feature to find closest hill
@@ -154,7 +168,8 @@ export default {
       // Add new markers based on the filtered list, store in data
       mapMarkers = this.hills.map(h => {
         // Get the color
-        const color = this.hillTypes.find(ht => ht.name === h.type).color
+        const match = this.hillTypes.find(ht => ht.name === h.type)
+        const color = match ? match.color : '#eb3b5a'
         // Create the marker
         const marker = L.circleMarker([h.lat, h.lng], {
           stroke: false,
@@ -231,7 +246,12 @@ export default {
 
       // Create the lines
       mapLines = nearestList.map((n, i) => {
-        const line = L.polyline([target.geometry.coordinates, n.point], {
+        // const line = L.polyline([target.geometry.coordinates, n.point], {
+        //   interactive: false,
+        //   opacity: 0.75,
+        //   color: gradient.rgbAt((i + 1) / nearestList.length)
+        // })
+        const line = L.geodesic([target.geometry.coordinates, n.point], {
           interactive: false,
           opacity: 0.75,
           color: gradient.rgbAt((i + 1) / nearestList.length)

@@ -13,6 +13,7 @@
     "bootstrap-vue": "^2.22.0",
     "core-js": "^3.8.3",
     "leaflet": "^1.8.0",
+    "leaflet.geodesic": "^2.6.1",
     "register-service-worker": "^1.7.2",
     "tinygradient": "^1.1.5",
     "vue": "^2.6.14",
