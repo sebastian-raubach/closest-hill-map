@@ -15,6 +15,12 @@
             :key="`hill-type-${hill.name}`"
             :pressed.sync="hill.state"><span :style="{ color: hill.state ? hill.color : '#999' }">⬤</span> <span class="hill-name">{{ hill.name }}</span></b-button>
         </b-button-group>
+        <b-button-group class="flex-wrap mx-2 mb-3" v-if="customCategories && customCategories.length > 0">
+          <b-button
+            :disabled="true"
+            v-for="(cat, index) in customCategories"
+            :key="`category-${cat}`"><span :style="{ color: customColors[index % customColors.length] }">⬤</span> <span class="hill-name">{{ cat }}</span></b-button>
+        </b-button-group>
         <b-button-group class="flex-wrap mx-2 mb-3">
           <b-button v-for="mode in updateModes" :key="`update-mode-${mode.value}`" :pressed="mode.value === updateMode" @click="updateMode = mode.value">
             <component :is="mode.icon" /> {{ mode.text }}
@@ -66,6 +72,7 @@ export default {
   },
   data: function () {
     return {
+      customColors: ['#00a0f1', '#5ec418', '#910080', '#222183', '#ff7c00', '#c5e000', '#c83831', '#ff007a', '#fff600'],
       customData: null,
       updateMode: 'center',
       hillCount: 10,
@@ -87,6 +94,24 @@ export default {
     }
   },
   computed: {
+    customCategories: function () {
+      if (this.customData) {
+        const distinct = new Set()
+        this.customData.forEach(d => {
+          if (d.category) {
+            distinct.add(d.category)
+          }
+        })
+
+        if (distinct.size > 0) {
+          return [...distinct].sort()
+        } else {
+          return []
+        }
+      } else {
+        return []
+      }
+    },
     hills: function () {
       // Filter hills on type state
       if (this.customData) {
@@ -169,7 +194,16 @@ export default {
       mapMarkers = this.hills.map(h => {
         // Get the color
         const match = this.hillTypes.find(ht => ht.name === h.type)
-        const color = match ? match.color : '#eb3b5a'
+        let color = match ? match.color : '#eb3b5a'
+
+        if (this.customCategories) {
+          const index = this.customCategories.indexOf(h.category)
+
+          if (index !== -1) {
+            color = this.customColors[index % this.customColors.length]
+          }
+        }
+
         // Create the marker
         const marker = L.circleMarker([h.lat, h.lng], {
           stroke: false,

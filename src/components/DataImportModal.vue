@@ -7,7 +7,7 @@
            ref="dataImportModal">
     <b-form @submit.prevent="onSubmit">
       <b-form-group label="Input" label-for="input" description="Provide custom input in tab-delimited form. Columns must include 'name', 'lat', and 'lng'.">
-        <b-form-textarea id="input" :state="state" ref="input" :rows="5" :placeholder="'name\tlat\tlng\nPlace1\t56.749\t-3.667\nPlace2\t56.741\t-3.167'" v-model="input" />
+        <b-form-textarea id="input" @keydown.tab.prevent="tabber($event)" :state="state" ref="input" :rows="5" :placeholder="'name\tlat\tlng\tcategory\nPlace1\t56.749\t-3.667\tA\nPlace2\t56.741\t-3.167\tB'" v-model="input" />
         <b-form-invalid-feedback :state="state">
           Invalid input format. Please make sure you included the required columns and your data is tab-delimited.
         </b-form-invalid-feedback>
@@ -25,6 +25,16 @@ export default {
     }
   },
   methods: {
+    tabber: function (event) {
+      const text = this.input
+      const originalSelectionStart = event.target.selectionStart
+      const textStart = text.slice(0, originalSelectionStart)
+      const textEnd = text.slice(originalSelectionStart)
+
+      this.input = `${textStart}\t${textEnd}`
+      event.target.value = this.input // required to make the cursor stay in place.
+      event.target.selectionEnd = event.target.selectionStart = originalSelectionStart + 1
+    },
     /**
      * Shows and resets modal dialog
      */
