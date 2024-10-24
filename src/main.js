@@ -12,6 +12,7 @@ import {
   FormPlugin,
   FormRadioPlugin,
   FormTextareaPlugin,
+  ImagePlugin,
   InputGroupPlugin,
   JumbotronPlugin,
   LayoutPlugin,
@@ -26,6 +27,7 @@ Vue.use(FormGroupPlugin)
 Vue.use(FormInputPlugin)
 Vue.use(FormRadioPlugin)
 Vue.use(FormTextareaPlugin)
+Vue.use(ImagePlugin)
 Vue.use(InputGroupPlugin)
 Vue.use(JumbotronPlugin)
 Vue.use(LayoutPlugin)

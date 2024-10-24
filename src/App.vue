@@ -1,7 +1,10 @@
 <template>
   <div id="app">
-    <b-navbar toggleable="lg" type="dark" variant="info">
-      <b-navbar-brand :to="{ name: 'home' }">ClosestHillMap</b-navbar-brand>
+    <b-navbar toggleable="lg" type="dark" variant="primary">
+      <b-navbar-brand :to="{ name: 'home' }">
+        <img src="/img/logo.svg" height="30px" class="d-inline-block align-top me-3" alt="Closest Hill Map" >
+         ClosestHillMap
+      </b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
@@ -18,6 +21,8 @@
 </template>
 
 <style lang="scss">
+$primary: #2980b9;
+
 @import '~bootstrap/scss/bootstrap';
 @import '~bootstrap-vue/src/index.scss';
 </style>

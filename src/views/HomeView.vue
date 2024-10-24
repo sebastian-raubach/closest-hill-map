@@ -1,11 +1,20 @@
 <template>
   <div>
     <b-container>
-      <b-jumbotron class="mb-3" header="Closest Hill Map" lead="Find the closest hills to your location.">
-        <p>Use the controls below to toggle hill types, select the interaction mode and the number of hills.</p>
-        <b-button variant="primary" :to="{ name: 'about' }">Find out more</b-button>
-        <b-button variant="secondary" class="mx-2" @click="$refs.dataImportModal.show()">Import my own data</b-button>
-        <b-button variant="secondary" @click="customData = null" v-if="customData">Reset</b-button>
+      <b-jumbotron class="mb-3">
+        <b-row>
+          <b-col cols=12 md=8 order=2 order-md=1>
+            <h1 class="display-3">Closest Hill Map</h1>
+            <p class="lead">Find the closest hills to your location.</p>
+            <p>Use the controls below to toggle hill types, select the interaction mode and the number of hills.</p>
+            <b-button variant="primary" :to="{ name: 'about' }">Find out more</b-button>
+            <b-button variant="secondary" class="mx-2" @click="$refs.dataImportModal.show()">Import my own data</b-button>
+            <b-button variant="secondary" @click="customData = null" v-if="customData">Reset</b-button>
+          </b-col>
+          <b-col cols=12 md=4 order=1 order-md=2 class="logo-container d-flex justify-content-center">
+            <b-img class="p-3 p-md-0 pl-md-5" fluid-grow src="/img/logo.svg" />
+          </b-col>
+        </b-row>
       </b-jumbotron>
       <div class="d-flex flex-wrap justify-content-center align-items-center">
         <b-button-group class="flex-wrap mx-2 mb-3">
@@ -341,5 +350,9 @@ export default {
 }
 .hill-name {
   text-transform: capitalize;
+}
+
+.logo-container img {
+  max-width: 250px;
 }
 </style>
