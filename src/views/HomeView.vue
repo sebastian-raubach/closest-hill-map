@@ -12,7 +12,7 @@
             <b-button variant="secondary" @click="customData = null" v-if="customData">Reset</b-button>
           </b-col>
           <b-col cols=12 md=4 order=1 order-md=2 class="logo-container d-flex justify-content-center">
-            <b-img class="p-3 p-md-0 pl-md-5" fluid-grow src="/img/logo.svg" />
+            <b-img class="p-3 p-md-0 pl-md-5" fluid-grow src="img/logo.svg" />
           </b-col>
         </b-row>
       </b-jumbotron>

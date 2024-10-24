@@ -2,7 +2,7 @@
   <div id="app">
     <b-navbar toggleable="lg" type="dark" variant="primary">
       <b-navbar-brand :to="{ name: 'home' }">
-        <img src="/img/logo.svg" height="30px" class="d-inline-block align-top me-3" alt="Closest Hill Map" >
+        <img src="img/logo.svg" height="30px" class="d-inline-block align-top me-3" alt="Closest Hill Map" >
          ClosestHillMap
       </b-navbar-brand>
 
